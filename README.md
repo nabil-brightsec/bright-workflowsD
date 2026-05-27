@@ -9,7 +9,7 @@ Four manual (`workflow_dispatch`) workflows that drive Bright DAST scans against
 | `bright-discover-schema.yml` | Discover entrypoints from a pre-uploaded OpenAPI or Postman spec |
 | `bright-scan-ple.yml` | Run a security scan against project-level entrypoints (PLE) that are `new`, `changed`, or `vulnerable`; 49 tests pinned |
 
-## Typical flow
+## Typical flow.
 
 1. Run one of the three `bright-discover-*` workflows to populate/refresh the project's entrypoints.
 2. Run `bright-scan-ple.yml` to execute the security scan against the matching entrypoints.
