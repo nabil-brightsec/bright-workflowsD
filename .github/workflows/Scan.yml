@@ -10,7 +10,7 @@ on:
       severity:
         description: "Fail the job on first issue of this severity or higher"
         required: true
-        default: "critical"
+        default: "medium"
         type: choice
         options:
           - any
@@ -20,7 +20,7 @@ on:
       timeout_seconds:
         description: "How long to wait for issues before exiting"
         required: false
-        default: "3600"
+        default: "10800"
       project_id:
         description: "Bright project ID (leave blank to use repo var BRIGHT_PROJECT_ID)"
         required: false
