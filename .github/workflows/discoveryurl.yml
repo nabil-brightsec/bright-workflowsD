@@ -66,6 +66,7 @@ jobs:
         run: echo "Discovery - ${{ steps.start.outputs.url }}"
 
       - name: Wait for discovery
+        if: false
         uses: NeuraLegion/wait-for-discovery@v1
         with:
           api_token: ${{ secrets.BRIGHT_TOKEN }}
