@@ -8,7 +8,7 @@ on:
       target_url:
         description: "URL to crawl (reached through the repeater)"
         required: true
-        default: "https://platform-central.mrt-tam01-dev-nprd.aws.moodys.tld/"
+        default: "https://brokencrystals.com/vendor/counter-up/jquery.counterup.min.js"
       discovery_name:
         description: "Discovery name shown in Bright"
         required: false
@@ -46,7 +46,7 @@ jobs:
         id: cfg
         run: |
           PID="${{ inputs.project_id || vars.BRIGHT_PROJECT_ID }}"
-          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://platform-central.mrt-tam01-dev-nprd.aws.moodys.tld/' }}"
+          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://brokencrystals.com/vendor/counter-up/jquery.counterup.min.js' }}"
           RID="${{ inputs.repeater_id || vars.BRIGHT_REPEATER_ID }}"
           AID="${{ inputs.auth_object_id || vars.BRIGHT_AUTH_OBJECT_ID }}"
           [ -z "$PID" ] && { echo "::error::No project ID"; exit 1; }
