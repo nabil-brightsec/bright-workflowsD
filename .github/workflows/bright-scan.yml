@@ -34,10 +34,6 @@ on:
         description: "Comma-separated entrypoint statuses to include"
         required: false
         default: "new,changed,vulnerable"
-      entrypoint_limit:
-        description: "Max number of entrypoints to pull"
-        required: false
-        default: "500"
 
 permissions:
   contents: read
@@ -61,43 +57,22 @@ jobs:
             echo "name=${{ inputs.scan_name || 'brokencrystals entrypoints scan' }} ${{ github.sha }}"
             # echo "severity=${{ inputs.severity || 'medium' }}"
             # echo "timeout=${{ inputs.timeout_seconds || '10800' }}"
-            echo "statuses=${{ inputs.entrypoint_statuses || 'new,changed,vulnerable' }}"
-            echo "limit=${{ inputs.entrypoint_limit || '500' }}"
+            STATUSES="${{ inputs.entrypoint_statuses || 'new,changed,vulnerable' }}"
+            echo "statuses=$(echo "$STATUSES" | tr -d ' ' | jq -Rc 'split(",")')"
           } >> "$GITHUB_OUTPUT"
           echo "Project: $PID | Repeater: $RID"
 
-      - name: List entrypoints
-        id: entrypoints
-        uses: BrightSec/list-entrypoints@v1.1
-        with:
-          api_token: ${{ secrets.BRIGHT_TOKEN }}
-          project_id: ${{ steps.cfg.outputs.project }}
-          status: ${{ steps.cfg.outputs.statuses }}
-          connectivity: ok
-          limit: ${{ steps.cfg.outputs.limit }}
-          ids_only: 'true'
-
-      - name: Guard - fail if no entrypoints matched
-        env:
-          IDS: ${{ steps.entrypoints.outputs.entrypoints }}
-        run: |
-          COUNT=$(echo "${IDS:-[]}" | jq 'length')
-          echo "Matched $COUNT entrypoints with status '${{ steps.cfg.outputs.statuses }}'"
-          if [ "$COUNT" -eq 0 ]; then
-            echo "::error::No entrypoints matched - run the discovery workflow first, then re-run."
-            exit 1
-          fi
-
       - name: Start Bright scan (full test list)
         id: start
-        uses: BrightSec/run-scan@v1.4
+        uses: BrightSec/run-scan@release   # latest; supports entrypoints_statuses (no crawler)
         with:
           api_token: ${{ secrets.BRIGHT_TOKEN }}
           name: ${{ steps.cfg.outputs.name }}
           project_id: ${{ steps.cfg.outputs.project }}
           repeaters: ${{ steps.cfg.outputs.repeaters }}
-          entrypoints: ${{ steps.entrypoints.outputs.entrypoints }}
-          module: dast
+          entrypoints_statuses: ${{ steps.cfg.outputs.statuses }}
+          entrypoint_connectivity_statuses: |
+            ["ok"]
           tests: |
             ["amazon_s3_takeover","bopla","broken_saml_auth","brute_force_login","business_constraint_bypass","common_files","cookie_security","csrf","css_injection","cve_test","date_manipulation","default_login_location","directory_listing","email_injection","excessive_data_exposure","file_upload","full_path_disclosure","graphql_introspection","header_security","html_injection","http_method_fuzzing","id_enumeration","iframe_injection","improper_asset_management","insecure_output_handling","insecure_tls_configuration","jwt","ldapi","lfi","nosql","open_cloud_storage","open_database","osi","prompt_injection","proto_pollution","retire_js","rfi","secret_tokens","server_side_js_injection","sqli","ssrf","ssti","stored_xss","unvalidated_redirect","version_control_systems","wordpress","xpathi","xss","xxe"]
 
