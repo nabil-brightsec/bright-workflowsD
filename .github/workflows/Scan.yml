@@ -37,7 +37,7 @@ on:
       entrypoint_limit:
         description: "Max number of entrypoints to pull"
         required: false
-        default: "2000"
+        default: "500"
 
 permissions:
   contents: read
