@@ -42,7 +42,7 @@ jobs:
         id: cfg
         run: |
           PID="${{ inputs.project_id || vars.BRIGHT_PROJECT_ID }}"
-          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://brokencrystals.com/' }}"
+          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://brokencrystals.com/vendor/counter-up/jquery.counterup.min.js' }}"
           RID="${{ inputs.repeater_id || vars.BRIGHT_REPEATER_ID }}"
           AID="${{ inputs.auth_object_id || vars.BRIGHT_AUTH_OBJECT_ID }}"
           [ -z "$PID" ] && { echo "::error::No project ID"; exit 1; }
