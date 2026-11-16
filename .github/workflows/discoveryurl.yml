@@ -1,4 +1,4 @@
-name: Bright Discovery - crawler (Moody's via repeater)
+name: Bright Discovery - crawler (test)
 
 on:
   push:
@@ -8,11 +8,11 @@ on:
       target_url:
         description: "URL to crawl (reached through the repeater)"
         required: true
-        default: "https://brokencrystals.com/vendor/counter-up/jquery.counterup.min.js"
+        default: "https://brokencrystals.com/"
       discovery_name:
         description: "Discovery name shown in Bright"
         required: false
-        default: "crawler discovery"
+        default: "Crawler discovery"
       repeater_id:
         description: "Repeater ID (blank = repo var BRIGHT_REPEATER_ID)"
         required: false
@@ -29,10 +29,6 @@ on:
         description: "Crawl parent path folders and subdomains"
         required: false
         default: "false"
-      wait_timeout_seconds:
-        description: "How long to wait for discovery to finish"
-        required: false
-        default: "3600"
 
 permissions:
   contents: read
@@ -46,7 +42,7 @@ jobs:
         id: cfg
         run: |
           PID="${{ inputs.project_id || vars.BRIGHT_PROJECT_ID }}"
-          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://brokencrystals.com/vendor/counter-up/jquery.counterup.min.js' }}"
+          URL="${{ inputs.target_url || vars.BRIGHT_TARGET_URL || 'https://brokencrystals.com/' }}"
           RID="${{ inputs.repeater_id || vars.BRIGHT_REPEATER_ID }}"
           AID="${{ inputs.auth_object_id || vars.BRIGHT_AUTH_OBJECT_ID }}"
           [ -z "$PID" ] && { echo "::error::No project ID"; exit 1; }
@@ -59,7 +55,6 @@ jobs:
             echo "repeaters=[\"$RID\"]"
             echo "name=${{ inputs.discovery_name || 'crawler discovery' }} ${{ github.sha }}"
             echo "parent=${{ inputs.crawl_parent_subdomains || 'false' }}"
-            echo "timeout=${{ inputs.wait_timeout_seconds || '3600' }}"
           } >> "$GITHUB_OUTPUT"
           echo "Project: $PID | URL: $URL | Repeater: $RID | Auth: ${AID:-<anonymous>}"
 
@@ -80,11 +75,3 @@ jobs:
 
       - name: Show discovery URL
         run: echo "Discovery - ${{ steps.start.outputs.url }}"
-
-      - name: Wait for discovery
-        uses: BrightSec/wait-for-discovery@v1
-        with:
-          api_token: ${{ secrets.BRIGHT_TOKEN }}
-          discovery_id: ${{ steps.start.outputs.id }}
-          project_id: ${{ steps.cfg.outputs.project }}
-          timeout: ${{ steps.cfg.outputs.timeout }}
