@@ -1,6 +1,10 @@
 name: Bright Scan - project-level entrypoints (test)
 
 on:
+  push:
+    branches: ['testingeverything']
+    paths-ignore:
+      - '.github/workflows/bright-discovery.yml'   # editing the discovery file won't start a scan
   workflow_dispatch:
     inputs:
       scan_name:
