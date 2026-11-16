@@ -3,6 +3,8 @@ name: Bright Discovery - crawler (test)
 on:
   push:
     branches: ['testingeverything']
+    paths-ignore:
+      - '.github/workflows/bright-scan.yml'   # editing the scan file won't start a discovery
   workflow_dispatch:
     inputs:
       target_url:
