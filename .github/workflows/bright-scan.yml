@@ -41,7 +41,7 @@ on:
       buckets:
         description: "Comma-separated test buckets (business_logic, client_side, cve, legacy, api, server_side, mcp_attacks...)"
         required: false
-        default: "business_logic,client_side,cve,legacy"
+        default: "api,business_logic,client_side,cve,legacy,mcp_attacks,server_side"
 
 permissions:
   contents: read
@@ -67,7 +67,7 @@ jobs:
             # echo "timeout=${{ inputs.timeout_seconds || '10800' }}"
             STATUSES="${{ inputs.entrypoint_statuses || 'new,changed,vulnerable' }}"
             echo "statuses=$(echo "$STATUSES" | tr -d ' ' | jq -Rc 'split(",")')"
-            BUCKETS="${{ inputs.buckets || 'business_logic,client_side,cve,legacy' }}"
+            BUCKETS="${{ inputs.buckets || 'api,business_logic,client_side,cve,legacy,mcp_attacks,server_side' }}"
             echo "buckets=$(echo "$BUCKETS" | tr -d ' ' | jq -Rc 'split(",")')"
           } >> "$GITHUB_OUTPUT"
           echo "Project: $PID | Repeater: $RID"
