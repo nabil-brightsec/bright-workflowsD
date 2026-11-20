@@ -4,7 +4,7 @@ on:
   push:
     branches: ['testingeverything']
     paths-ignore:
-      - '.github/workflows/bright-discovery.yml'   # editing the discovery file won't start a scan
+      - '.github/workflows/discoveryurl.yml'   # editing the discovery file won't start a scan
   workflow_dispatch:
     inputs:
       scan_name:
@@ -35,9 +35,13 @@ on:
         required: false
         default: ""
       entrypoint_statuses:
-        description: "Comma-separated entrypoint statuses to include"
+        description: "Comma-separated entrypoint statuses to include (add 'tested' to cover all entrypoints)"
         required: false
         default: "new,changed,vulnerable"
+      buckets:
+        description: "Comma-separated test buckets (business_logic, client_side, cve, legacy, api, server_side, mcp_attacks...)"
+        required: false
+        default: "business_logic,client_side,cve,legacy"
 
 permissions:
   contents: read
@@ -63,22 +67,44 @@ jobs:
             # echo "timeout=${{ inputs.timeout_seconds || '10800' }}"
             STATUSES="${{ inputs.entrypoint_statuses || 'new,changed,vulnerable' }}"
             echo "statuses=$(echo "$STATUSES" | tr -d ' ' | jq -Rc 'split(",")')"
+            BUCKETS="${{ inputs.buckets || 'business_logic,client_side,cve,legacy' }}"
+            echo "buckets=$(echo "$BUCKETS" | tr -d ' ' | jq -Rc 'split(",")')"
           } >> "$GITHUB_OUTPUT"
           echo "Project: $PID | Repeater: $RID"
 
-      - name: Start Bright scan (full test list)
+      # Calls Bright's REST API (POST /api/v1/scans) directly, because the
+      # run-scan action has no input for test buckets.
+      - name: Start Bright scan (test buckets)
         id: start
-        uses: BrightSec/run-scan@release   # latest; supports entrypoints_statuses (no crawler)
-        with:
-          api_token: ${{ secrets.BRIGHT_TOKEN }}
-          name: ${{ steps.cfg.outputs.name }}
-          project_id: ${{ steps.cfg.outputs.project }}
-          repeaters: ${{ steps.cfg.outputs.repeaters }}
-          entrypoints_statuses: ${{ steps.cfg.outputs.statuses }}
-          entrypoint_connectivity_statuses: |
-            ["ok"]
-          tests: |
-            ["amazon_s3_takeover","bopla","broken_saml_auth","brute_force_login","business_constraint_bypass","common_files","cookie_security","csrf","css_injection","cve_test","date_manipulation","default_login_location","directory_listing","email_injection","excessive_data_exposure","file_upload","full_path_disclosure","graphql_introspection","header_security","html_injection","http_method_fuzzing","id_enumeration","iframe_injection","improper_asset_management","insecure_output_handling","insecure_tls_configuration","jwt","ldapi","lfi","nosql","open_cloud_storage","open_database","osi","prompt_injection","proto_pollution","retire_js","rfi","secret_tokens","server_side_js_injection","sqli","ssrf","ssti","stored_xss","unvalidated_redirect","version_control_systems","wordpress","xpathi","xss","xxe"]
+        env:
+          BRIGHT_TOKEN: ${{ secrets.BRIGHT_TOKEN }}
+          BRIGHT_HOST: ${{ vars.BRIGHT_HOSTNAME || 'app.brightsec.com' }}
+          NAME: ${{ steps.cfg.outputs.name }}
+          PID: ${{ steps.cfg.outputs.project }}
+          REPEATERS: ${{ steps.cfg.outputs.repeaters }}
+          STATUSES: ${{ steps.cfg.outputs.statuses }}
+          BUCKETS: ${{ steps.cfg.outputs.buckets }}
+        run: |
+          BODY=$(jq -n \
+            --arg name "$NAME" --arg pid "$PID" \
+            --argjson repeaters "$REPEATERS" \
+            --argjson statuses "$STATUSES" \
+            --argjson buckets "$BUCKETS" \
+            '{name: $name, projectId: $pid, module: "dast",
+              buckets: $buckets, repeaters: $repeaters,
+              entryPointFilter: {securityStatus: $statuses, connectivityStatus: ["ok"]}}')
+          echo "Request body:"; echo "$BODY" | jq .
+          RESP=$(curl -sS -w '\n%{http_code}' -X POST "https://$BRIGHT_HOST/api/v1/scans" \
+            -H "Authorization: Api-Key $BRIGHT_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+          CODE=$(echo "$RESP" | tail -n1); JSON=$(echo "$RESP" | sed '$d')
+          echo "HTTP $CODE"; echo "$JSON" | jq . 2>/dev/null || echo "$JSON"
+          if [ "$CODE" -ge 300 ]; then echo "::error::Bright API returned $CODE"; exit 1; fi
+          ID=$(echo "$JSON" | jq -r '.id')
+          echo "$JSON" | jq -r '.warnings[]? | "::warning::" + (.message // tostring)'
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "url=https://$BRIGHT_HOST/scans/$ID" >> "$GITHUB_OUTPUT"
 
       - name: Show scan URL
         run: echo "Scan started - ${{ steps.start.outputs.url }}"
